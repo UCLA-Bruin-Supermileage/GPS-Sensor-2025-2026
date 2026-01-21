@@ -1,0 +1,88 @@
+-------------------------Overall-------------------------
+
+Simply connecting the antenna to power and reading the data will result in meter-level precision. It is therefore important for us to provide live correction data to the antenna in order to increase our precision to centimeter-level. In order to do this, we must 1) get access to Base Station RTCM data feeds
+
+1) Accessing base station feeds
+Building RTKLIB
+Create an account using this link https://www.earthscope.org/user/licenses. 
+UNAVCO provides a free non-commercial license to access their base station data feeds. Create a non-commercial license and remember the following information that is presented when you access your license. It should look something like this:  
+
+Now, go to https://github.com/tomojitakasu/RTKLIB/tree/master/app. Clone or download the zip file for their data. I will only discuss how to build this on Windows because this is easy. 
+In order to build from these source files into a Win GUI application, download the Embarcadero IDE (download C++ Builder from this link: 
+
+https://www.embarcadero.com/?utm_source=Google&utm_medium=PPC&utm_campaign=&utm_content=&utm_term=embarcadero%20c%2B%2B%20builder&gad_source=1&gad_campaignid=20491236662&gbraid=0AAAAAD_O-MO2Sz2F6BGByOomcOVI3UEzh&gclid=CjwKCAiA4KfLBhB0EiwAUY7GAegn_8xQEww_VAWbG3UlKOSGmWkhc9ZWjKu3992Jm-UwHxVD1CRcGBoCLTEQAvD_BwE). 
+
+Back in the day, this used to be called Borland C++ IDE. It has since rebranded, but it still contains the necessary dependencies that the RTKLIB GUI code requires. Now, navigate to the RTKLIB folder you have downloaded from the GitHub repo. Access the  app  folder, and open rtklib_winapp.groupproj in the Embarcadero C++ Builder. Click on  Project  then  Build all projects.  
+
+Once the build has completed, go back into the  app  folder and run the install_winapp.bat, which is will install the necessary DLLs and libs. Now, navigate to the master directory, and then into a folder called  bin.  In here will be your necessary executables to run the GUI. Run  rtklauch.exe  to give you a GUI to then navigate to the other applications. NOTE** We don t really need the other executables or functionality, but we may need it later. As a result, I have created this documentation this way to build all executables. 
+
+-------------------------Accessing data streams-------------------------
+Launch rtklaunch.exe, then click on the second icon from the right. This will launch rtknavi.exe. Alternatively you may run the rtknavi executable directly from the bin folder. Click on the  I  icon in the top middle, select  (2) Base Station.  Select Type: NTRIP Client.
+Then click on the three dots labeled  Opt.  
+Enter the following data:
+NTRIP Caster Host: ntrip.earthscope.org
+Port: 2101
+Mountpoint: LFRS_RTCM3P3 --> (closest base station to UCLA, located in Beverly Hills)
+User-ID: The user ID you obtained with your UNAVCO license above
+Password: The password you obtained with your UNAVCO license
+Click OK.
+
+
+Now, press  Start  in the bottom left. This will populate a table and you will see some flashing green lights in the top right. This indicates a healthy connection with the base station. You may check the base station status via this link: https://www.unavco.org/instrumentation/networks/map/map.html#!/ 
+
+-------------------------Logging Data to serial port-------------------------
+We want to take the base station data we have now accessed and pipe it into a serial port. In the RTKNAVI GUI, in the top right corner there is a button  L  for logging. Click on it.
+
+Then select 
+(7) Base Station
+Type: Serial
+
+Now Click on the three dots  Option  and configure your serial port with:
+Port: Your desired com port
+Bitrate: Typically, UNAVCO base stations output 115200 bps
+Byte Size: 8 bits
+Parity: None
+Stop Bits: 1
+Flow Control: None
+Click OK.
+
+Now press  start. 
+
+There will be green lights flashing in all three sections in the top right of the GUI. The first two indicate a healthy connection from the base station to your device. The second and third indicate a healthy output stream from your device to your com port. NOTE** If the third light turns red at any time, this means that data could not be successfully transferred to the com port. This indicates that there is something wrong with your serial connection. Make sure you are using the right bitrate. 
+
+
+
+
+
+
+
+
+
+
+
+
+Initialize STM32 I2C PB8 = SCL, PB9 = SDA
+To read I2C, connect SDA and SCL lines from GPS to STM32 
+Configure uart transmission for data logging: 
+1. int __io_putchar(int ch) {
+2. 	HAL_UART_Transmit(&huart2, (uint8_t*)&ch, 1, HAL_MAX_DELAY);
+3. 	return ch;
+4. }
+
+Make sure to declare above function prototype
+Initialize a buffer
+Uint16_t slave_address = 0x42 << 1;
+Left shift the slave by one necessary for 
+HAL_StatusTypeDef status = HAL_I2C_Master_Receive(&hi2c1, slave_address, buffer, sizeof(buffer), [Timeout])
+
+Need to check if we get an okay status
+if (status == HAL_OK) {
+	// do stuff with filled buffer
+	GPSlocation = translateGNRMC(buffer);
+	printf( Latitude: &lf\nLongitude: %lf\n , GPSlocation.latitude, GPSlocation.longitude);
+}
+
+Where translateGNRMC is my decoder function, which I can have provided in a separate file.
+
+
+
