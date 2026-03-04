@@ -16,14 +16,6 @@ inline void delay_c(unsigned long msDelay) {
 }
 
 
-int serial_available() {
-  return Serial.available();
-}
-
-int serial_read() {
-  return Serial.read();
-}
-
 template <typename T>
 inline void serial_print(const T& arg) {
     Serial.print(arg);
