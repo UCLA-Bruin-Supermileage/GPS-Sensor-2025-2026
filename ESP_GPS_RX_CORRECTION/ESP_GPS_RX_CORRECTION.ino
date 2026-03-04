@@ -3,6 +3,9 @@
 
 /*  ------------------ RECEIVER CODE INIT RTCM BEGIN ------------------*/
 
+#include <nRF24L01.h>
+#include <RF24.h>
+
 #define MAX_DATA_TRANSFER 32
 #define RTCM_BUFF_SIZE 1000
 #define ADDR_SIZE 5
@@ -23,7 +26,7 @@ void setup() {
   radio.openReadingPipe(0, address);
 
   // set as necessary
-  radio.setPaLevel(RF24_PA_MIN);
+  radio.setPALevel(RF24_PA_MIN);
 
   // change data rate as needed
   radio.setDataRate(RF24_2MBPS);

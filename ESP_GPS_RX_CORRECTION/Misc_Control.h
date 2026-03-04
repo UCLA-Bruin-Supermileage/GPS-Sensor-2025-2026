@@ -21,6 +21,11 @@ inline void serial_print(const T& arg) {
     Serial.print(arg);
 }
 
+template <typename T>
+inline void serial_write(const T& arg) {
+  Serial.write(arg);
+}
+
 inline void serial_begin(uint32_t baudRate) {
   Serial.begin(baudRate);
 }

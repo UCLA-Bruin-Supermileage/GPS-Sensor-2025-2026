@@ -38,9 +38,11 @@ void loop() {
     sendBuff[dataCounter] = serial_read(); 
     dataCounter++;
 
-    if (dataCounter == (MAX_DATA_TRANSFER - 1)) {
+    if (dataCounter == (MAX_DATA_TRANSFER)) {
       // buffer has been populated, transmit data
       radio.write(sendBuff, MAX_DATA_TRANSFER);
+      for (int i = 0; i < MAX_DATA_TRANSFER; i++)
+        serial_write(sendBuff[i]);
       dataCounter = 0;
     }
     
