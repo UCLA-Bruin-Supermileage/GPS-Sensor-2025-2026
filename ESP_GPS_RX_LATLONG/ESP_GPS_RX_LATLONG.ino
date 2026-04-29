@@ -41,7 +41,7 @@ void loop() {
   serial_println(availableBytes);
   
   // once we know how much is available, read it into our data buff
-  if (availableBytes >= 0) {
+  if (availableBytes > 0) {
     for (int i = 0; i < availableBytes; i++) {
       nmeaData[i] = i2c.readI2CReg(SLAVE_ADDR, READ_DATA_ADDR);
       // serial_print(nmeaData[i]);
