@@ -37,7 +37,7 @@ twai_message_t message;
 /* this will send a double */
 void twai_sendDouble(twai_message_t& msg, uint16_t id, double value) {
   msg.identifier = id;
-  memcpy(message.data, &value, sizeof(value));
+  memcpy(msg.data, &value, sizeof(value));
   twai_transmit(&msg, pdMS_TO_TICKS(1000));
 }
 
@@ -105,6 +105,11 @@ void loop() {
     serial_println(myLocation.longitude);
   }
 
+  /* debugging with aritra */
+     // send latitude
+    twai_sendDouble(message, 0x123, 1234.56);
+
+    twai_sendDouble(message, 0x124, 78.91011);
   // delay for neo m8p to fill internal buffers again with data
   delay(200);
 }
