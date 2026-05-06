@@ -6,8 +6,9 @@
 #include <nRF24L01.h>
 #include <RF24.h>
 
-RF24 radio(2, 4); // CE, CSN
-const uint8_t address[5] = {1, 2, 3, 4, 5};
+RF24 radio(2, 4);  // CE, CSN
+const uint8_t address[5] = { 1, 2, 3, 4, 5 };
+unsigned long lastSerialTime = 0;
 
 /*  ----------------- TRANSMITTER CODE INIT END -----------------*/
 
@@ -34,17 +35,15 @@ void setup() {
 }
 
 void loop() {
-  if (serial_available()) {
-    sendBuff[dataCounter] = serial_read(); 
-    dataCounter++;
+  while (serial_available() && dataCounter < MAX_DATA_TRANSFER) {
+    sendBuff[dataCounter++] = serial_read();
+    lastSerialTime = millis();
+  }
 
-    if (dataCounter == (MAX_DATA_TRANSFER)) {
-      // buffer has been populated, transmit data
-      radio.write(sendBuff, MAX_DATA_TRANSFER);
-      for (int i = 0; i < MAX_DATA_TRANSFER; i++)
-        serial_write(sendBuff[i]);
+  if (dataCounter > 0) {
+    if (dataCounter == MAX_DATA_TRANSFER || (millis() - lastSerialTime > 5)) {
+      radio.write(sendBuff, dataCounter);
       dataCounter = 0;
     }
-    
-  } 
+  }
 }
