@@ -5,6 +5,20 @@
 // canbus twai
 #include "driver/twai.h"
 
+#define CAN_BOARD_NAME 
+// aritra smv enum
+enum class DAQMessage {
+  Longitude,
+  Latitude,
+  Altitude
+};
+
+#define DAQ_BOARD 7
+
+#define DAQ_LONGITUDE 0
+#define DAQ_LATITUDE 1
+#define DAQ_ALTITUDE 2
+
 // can pins
 #define CAN_TX_PIN 16
 #define CAN_RX_PIN 17
@@ -41,12 +55,18 @@ void twai_sendDouble(twai_message_t& msg, uint16_t id, double value) {
   twai_transmit(&msg, pdMS_TO_TICKS(1000));
 }
 
+uint16_t daq_createID(uint16_t boardName, uint16_t datatype) {
+  uint16_t id = ((boardName & 0x0F) << 7) + datatype;
+  return id;
+}
+
 void setup() {
   i2c.begin();
-  serial_begin(115200);
-
+  // serial_begin(115200);
+  Serial.begin(115200);
+  delay(2000);
   // some config
-  twai_general_config_t g_config = TWAI_GENERAL_CONFIG_DEFAULT((gpio_num_t) CAN_TX_PIN, (gpio_num_t) CAN_RX_PIN, TWAI_MODE_NORMAL);
+  twai_general_config_t g_config = TWAI_GENERAL_CONFIG_DEFAULT((gpio_num_t)CAN_TX_PIN, (gpio_num_t)CAN_RX_PIN, TWAI_MODE_NORMAL);
   twai_timing_config_t t_config = TWAI_TIMING_CONFIG_500KBITS();
   twai_filter_config_t f_config = TWAI_FILTER_CONFIG_ACCEPT_ALL();
 
@@ -74,15 +94,22 @@ void loop() {
 
   /*  --------------- CHANGE THIS SHIT LATER WITH THE RIGHT REGISTERS ---------------*/
   /*  check for nmea data if it is ready */
-  GPS_MSB = i2c.readI2CReg(SLAVE_ADDR, DATA_SIZE_MSB_ADDR);
+  // GPS_MSB = i2c.readI2CReg(SLAVE_ADDR, DATA_SIZE_MSB_ADDR);
 
-  GPS_LSB = i2c.readI2CReg(SLAVE_ADDR, DATA_SIZE_LSB_ADDR);
+  // GPS_LSB = i2c.readI2CReg(SLAVE_ADDR, DATA_SIZE_LSB_ADDR);
 
-  // get our total number of bytes
-  availableBytes = static_cast<uint16_t>(GPS_MSB) << 8 | static_cast<uint16_t>(GPS_LSB);
-  serial_print("Available Bytes: ");
-  serial_println(availableBytes);
+  // // get our total number of bytes
+  // availableBytes = static_cast<uint16_t>(GPS_MSB) << 8 | static_cast<uint16_t>(GPS_LSB);
+  // serial_print("Available Bytes: ");
+  // serial_println(availableBytes);
 
+  uint16_t daqLat_id = daq_createID(DAQ_BOARD, DAQ_LATITUDE);
+  uint16_t daqLong_id = daq_createID(DAQ_BOARD, DAQ_LONGITUDE);
+
+  Serial.println(daqLat_id);
+  Serial.println(daqLong_id);
+
+  message.data_length_code = 8;
   // once we know how much is available, read it into our data buff
   if (availableBytes > 0) {
     for (int i = 0; i < availableBytes; i++) {
@@ -92,13 +119,10 @@ void loop() {
 
     myLocation = translateGNRMC(nmeaData);
 
-
-    message.data_length_code = 8;
-
     // send latitude
-    twai_sendDouble(message, 0x123, myLocation.latitude);
+    twai_sendDouble(message, daqLat_id, myLocation.latitude);
 
-    twai_sendDouble(message, 0x124, myLocation.longitude);
+    twai_sendDouble(message, daqLong_id, myLocation.longitude);
 
     // finally, let us print what we get
     serial_println(myLocation.latitude);
@@ -106,10 +130,10 @@ void loop() {
   }
 
   /* debugging with aritra */
-     // send latitude
-    twai_sendDouble(message, 0x123, 1234.56);
+  // send latitude
+  twai_sendDouble(message, daqLat_id, 1234.56);
 
-    twai_sendDouble(message, 0x124, 78.91011);
-  // delay for neo m8p to fill internal buffers again with data
-  delay(200);
+  twai_sendDouble(message, daqLong_id, 78.91011);
+  // delay for neo m8p to fill internal buffers again wi+th data
+  delay(1000);
 }

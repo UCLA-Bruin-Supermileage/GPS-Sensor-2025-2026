@@ -5,6 +5,19 @@
 // canbus stuff
 #include "driver/twai.h"
 
+// aritra smv enum
+enum class DAQMessage {
+  Longitude,
+  Latitude,
+  Altitude
+};
+
+#define DAQ_BOARD 7
+
+#define DAQ_LONGITUDE 0
+#define DAQ_LATITUDE 1
+#define DAQ_ALTITUDE 2
+
 // can pins
 #define CAN_TX_PIN 16
 #define CAN_RX_PIN 17
@@ -16,6 +29,11 @@ void twai_sendDouble(twai_message_t& msg, uint16_t id, double value) {
   msg.identifier = id;
   memcpy(msg.data, &value, sizeof(value));
   twai_transmit(&msg, pdMS_TO_TICKS(1000));
+}
+
+uint16_t daq_createID(uint16_t boardName, uint16_t datatype) {
+  uint16_t id = ((boardName & 0x0F) << 7) + datatype;
+  return id;
 }
 
 TaskHandle_t Task1;
@@ -67,8 +85,6 @@ uint8_t rtcmBuff[RTCM_BUFF_SIZE];
 /*  ------------------ RECEIVER CODE INIT RTCM END ------------------*/
 
 void setup() {
-  /*  for latitude and longitude reader */
-  i2c.begin();
 
   // now create the tasks
   xTaskCreatePinnedToCore(
@@ -129,6 +145,9 @@ void Task1code(void* pvParameters) {
 }
 
 void Task2code(void* pvParameters) {
+  /*  for latitude and longitude reader */
+  i2c.begin();
+
   // some config
   twai_general_config_t g_config = TWAI_GENERAL_CONFIG_DEFAULT((gpio_num_t)CAN_TX_PIN, (gpio_num_t)CAN_RX_PIN, TWAI_MODE_NORMAL);
   twai_timing_config_t t_config = TWAI_TIMING_CONFIG_500KBITS();
@@ -153,14 +172,19 @@ void Task2code(void* pvParameters) {
   message.ss = 0;    // not single-shot (allow retries)
   message.self = 0;  // not a self-reception
 
+  message.data_length_code = 8;
+
+  uint16_t daqLat_id = daq_createID(DAQ_BOARD, DAQ_LATITUDE);
+  uint16_t daqLong_id = daq_createID(DAQ_BOARD, DAQ_LONGITUDE);
+
   while (1) {
     /*  check for nmea data if it is ready */
-    GPS_MSB = i2c.readI2CReg(SLAVE_ADDR, DATA_SIZE_MSB_ADDR);
+    // GPS_MSB = i2c.readI2CReg(SLAVE_ADDR, DATA_SIZE_MSB_ADDR);
 
-    GPS_LSB = i2c.readI2CReg(SLAVE_ADDR, DATA_SIZE_LSB_ADDR);
+    // GPS_LSB = i2c.readI2CReg(SLAVE_ADDR, DATA_SIZE_LSB_ADDR);
 
-    // get our total number of bytes
-    availableBytes = static_cast<uint16_t>(GPS_MSB) << 8 | static_cast<uint16_t>(GPS_LSB);
+    // // get our total number of bytes
+    // availableBytes = static_cast<uint16_t>(GPS_MSB) << 8 | static_cast<uint16_t>(GPS_LSB);
 
     // once we know how much is available, read it into our data buff
     if (availableBytes > 0 && availableBytes < NMEA_DATA_SIZE - 1) {
@@ -173,8 +197,6 @@ void Task2code(void* pvParameters) {
 
       myLocation = translateGNRMC(nmeaData);
 
-      message.data_length_code = 8;
-
       // send latitude
       twai_sendDouble(message, 0x123, myLocation.latitude);
 
@@ -185,6 +207,7 @@ void Task2code(void* pvParameters) {
       // serial_println(myLocation.longitude);
     }
 
+    twai_sendDouble(message, daqLong_id, 32.34123);
     // delay for neo m8p to fill internal buffers again with data
     vTaskDelay(1500);
   }
