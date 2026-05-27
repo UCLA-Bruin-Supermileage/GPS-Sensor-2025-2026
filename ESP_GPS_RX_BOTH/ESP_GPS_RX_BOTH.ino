@@ -111,11 +111,11 @@ void setup() {
 
 void Task1code(void* pvParameters) {
   /*  for receiver */
-  serial_begin(115200);
+  // serial_begin(115200);
   radio.begin();
 
   radio.enableDynamicPayloads();
-  
+
   radio.openReadingPipe(0, address);
 
   // set as necessary
@@ -129,24 +129,25 @@ void Task1code(void* pvParameters) {
   /*  for receiver end */
 
   while (1) {
-    while (radio.available()) {
+    if (radio.available()) {
       uint8_t size = radio.getPayloadSize();
 
       radio.read(receiveBuff, size);
 
       // push raw data out to uart (serial_write())
-      for (int i = 0; i < size; i++)
-        serial_write(receiveBuff[i]);
+      // for (int i = 0; i < size; i++)
+      // serial_write(receiveBuff[i]);
     }
 
     // idk AI says i need this
-    vTaskDelay(1);
+    vTaskDelay(10);
   }
 }
 
 void Task2code(void* pvParameters) {
   /*  for latitude and longitude reader */
   i2c.begin();
+  serial_begin(115200);
 
   // some config
   twai_general_config_t g_config = TWAI_GENERAL_CONFIG_DEFAULT((gpio_num_t)CAN_TX_PIN, (gpio_num_t)CAN_RX_PIN, TWAI_MODE_NORMAL);
@@ -179,37 +180,40 @@ void Task2code(void* pvParameters) {
 
   while (1) {
     /*  check for nmea data if it is ready */
-    // GPS_MSB = i2c.readI2CReg(SLAVE_ADDR, DATA_SIZE_MSB_ADDR);
+    GPS_MSB = i2c.readI2CReg(SLAVE_ADDR, DATA_SIZE_MSB_ADDR);
 
-    // GPS_LSB = i2c.readI2CReg(SLAVE_ADDR, DATA_SIZE_LSB_ADDR);
+    GPS_LSB = i2c.readI2CReg(SLAVE_ADDR, DATA_SIZE_LSB_ADDR);
 
-    // // get our total number of bytes
-    // availableBytes = static_cast<uint16_t>(GPS_MSB) << 8 | static_cast<uint16_t>(GPS_LSB);
+    // get our total number of bytes
+    availableBytes = static_cast<uint16_t>(GPS_MSB) << 8 | static_cast<uint16_t>(GPS_LSB);
 
+    serial_print("Available Bytes: ");
+    serial_println(availableBytes);
     // once we know how much is available, read it into our data buff
-    if (availableBytes > 0 && availableBytes < NMEA_DATA_SIZE - 1) {
+    if (availableBytes > 0) {
       for (int i = 0; i < availableBytes; i++) {
         nmeaData[i] = i2c.readI2CReg(SLAVE_ADDR, READ_DATA_ADDR);
       }
 
       nmeaData[availableBytes] = '\0';
 
-
       myLocation = translateGNRMC(nmeaData);
 
       // send latitude
-      twai_sendDouble(message, 0x123, myLocation.latitude);
+      twai_sendDouble(message, daqLat_id, myLocation.latitude);
 
-      twai_sendDouble(message, 0x124, myLocation.longitude);
+      twai_sendDouble(message, daqLong_id, myLocation.longitude);
 
       // finally, let us print what we get
-      // serial_println(myLocation.latitude);
-      // serial_println(myLocation.longitude);
+      serial_println(myLocation.latitude);
+      serial_println(myLocation.longitude);
     }
 
-    twai_sendDouble(message, daqLong_id, 32.34123);
+    serial_println("Loop not entered still running");
+
+    // twai_sendDouble(message, daqLong_id, 32.34123);
     // delay for neo m8p to fill internal buffers again with data
-    vTaskDelay(1500);
+    vTaskDelay(pdMS_TO_TICKS(1500));
   }
 }
 

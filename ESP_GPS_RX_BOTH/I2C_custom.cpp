@@ -17,17 +17,13 @@ uint8_t I2C_Custom::read() {
 }
 
 uint8_t I2C_Custom::readI2CReg(uint8_t slaveAddr, uint8_t regAddr) {
-  this->send_start(slaveAddr);
-  this->write(regAddr);
-  this->send_stop();
+  Wire.beginTransmission(slaveAddr);
+  Wire.write(regAddr);
+  Wire.endTransmission(false);
 
-  this->reqFrom(regAddr, 1);
-
-  uint8_t inByte = 0;
-  if (this->available()) {
-    inByte = this->read();
-  }
-
+  Wire.requestFrom(slaveAddr, 1);
+  uint8_t inByte = Wire.read();
+  Wire.endTransmission(true);
   return inByte;
 }
 uint8_t I2C_Custom::available() {

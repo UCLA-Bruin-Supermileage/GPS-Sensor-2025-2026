@@ -131,9 +131,10 @@ void loop() {
 
   /* debugging with aritra */
   // send latitude
-  twai_sendDouble(message, daqLat_id, 1234.56);
 
+  twai_sendDouble(message, daqLat_id, 1234.56);
   twai_sendDouble(message, daqLong_id, 78.91011);
+  
   // delay for neo m8p to fill internal buffers again wi+th data
-  delay(1000);
+  delay(1500);
 }
