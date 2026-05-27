@@ -142,7 +142,7 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *CanHandle)
 		if (can1.getHardwareRaw(&can1) == DAQ_Board
 				&& can1.getDataTypeRaw(&can1) == Longitude) {
 			CAN_read = can1.getData(&can1);
-			printf("Longitude: %lf", CAN_read);
+			printf("Longitude: %lf\n", CAN_read);
 		}
 	}
 }
